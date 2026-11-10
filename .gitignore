@@ -44,3 +44,4 @@ Desktop.ini
 
 # Keep .hex firmware files tracked
 !**/*.hex
+
