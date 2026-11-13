@@ -1,13 +1,13 @@
-# CAT11: STM32F401RE Cortex-M4: GPIO and User Input Programming
+# CAT11: Embedded HTTP Server - STM32–Wemos Wi-Fi Modem Using AT Commands & Node-RED HTTP Client
 
 ## 1. Experiment Overview
 
 | Field | Details |
 |---|---|
-| **Experiment Identifier** | CAT11 |
-| **Date of Execution** | 14/10/2026 |
-| **Hardware Platform** | STM32 (ARM Cortex-M4) |
-| **Curriculum Scope** | Nucleo-F401RE Cortex-M4 GPIO bring-up, User Button B1 polling, and short vs. long press detection. |
+| **Experiment Identifier** | CAT11 (Curriculum Ref: CAT10C) |
+| **Date of Execution** | 12/10/2026 |
+| **Hardware Platform** | STM32F103C8T6 + ESP8266 (Wemos D1 Mini) |
+| **Curriculum Scope** | Processing incoming +IPD frames, executing two-step CIPSEND transmissions, hosting an embedded HTTP web server, and servicing Node-RED HTTP client polling. |
 
 ---
 
@@ -19,15 +19,13 @@
 
 ## 3. Subtask Directory Index
 
-| Task ID | Folder Link | Description & Objective |
-|---|---|---|
-| **TASK11A** | [TASK11A](TASK11A/) | Nucleo-F401RE User Button B1 (PC13) Polling & User LED LD2 Control |
-| **TASK11B** | [TASK11B](TASK11B/) | Multi-State Button Timing: Short Press vs. Long Press Mode Discrimination |
+| Subtask | Title | Description | Primary Peripherals |
+|---|---|---|---|
+| [TASK11](TASK11/README.md) | Embedded HTTP Server & Node-RED Integration | +IPD parsing, two-step CIPSEND response assembly, and dual-client support (browser & Node-RED). | USART1, USART2, ESP8266, HTTP/1.1 |
 
 ---
 
-## 4. Platform Specifications & Architecture
+## 4. Key Engineering Takeaways
 
-- **Microcontroller**: STM32 (ARM Cortex-M4)
-- **Development Toolchain**: Keil C51 / Keil MDK-ARM with STM32CubeMX HAL Driver Layer.
-- **Verification**: Complete source code, Keil project configurations, compiled `.hex` binaries, and circuit schematics are organized within each subtask directory.
+1. **Two-Step Transmission:** Dividing data transfer into command phase (`AT+CIPSEND=<id>,<len>`) and payload phase avoids buffer truncation.
+2. **REST / HTTP Compatibility:** Node-RED HTTP request nodes can poll the STM32 web server periodically to extract sensor status or control actuators.

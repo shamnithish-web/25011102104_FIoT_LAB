@@ -1,4 +1,4 @@
-# TASK10B: STM32–Wemos Wi-Fi Modem Interface Using AT Commands & Embedded HTTP Server
+# TASK10B: ESP8266 Multi-Connection TCP Server on Port 80
 
 ## Experiment Metadata
 
@@ -6,8 +6,8 @@
 |---|---|
 | **EXP** | CAT10 |
 | **DATE** | 05/10/2026 |
-| **NAME OF EXP** | STM32–Wemos Wi-Fi Modem Interface Using AT Commands & Embedded HTTP Server |
-| **HARDWARE SETUP / PLATFORM** | STM32F103C8T6, Wemos D1 Mini (ESP8266), Local Wi-Fi Router Access Point |
+| **NAME OF EXP** | ESP8266 Multi-Connection TCP Server on Port 80 |
+| **HARDWARE SETUP / PLATFORM** | STM32F103C8T6 (Blue Pill), Wemos D1 Mini (ESP8266), Local Wi-Fi Router |
 | **TASK NO** | TASK10B |
 
 ---
@@ -18,23 +18,27 @@
 
 ### Pin Connections & Hardware Interface
 
-| STM32 Pin | ESP8266 Pin | Function |
+| STM32 Pin | Target Device | Function |
 |---|---|---|
-| PA2, PA3 | RX, TX | UART2 Modem Bridge |
-| 3.3V, GND | 3.3V, GND | Power Supply Rail |
+| PA2, PA3 | ESP8266 RX, TX | Modem AT Command Link (USART2) |
+| PA9, PA10 | PC Serial Terminal | Diagnostic Terminal (USART1) |
+| 3.3V, GND | System Power Rail | Power Supply |
 
 ---
 
 ## Core Logic & Pseudocode
 
 ```text
-1. Initialize UART1 (Debug) and UART2 (Modem).
-2. Connect to Wi-Fi Access Point: 'AT+CWJAP="SSID","PASS"\r\n'.
-3. Wait for 'WIFI CONNECTED' and 'WIFI GOT IP'.
-4. Query IP address: 'AT+CIFSR\r\n'.
-5. Enable multiple TCP connections: 'AT+CIPMUX=1\r\n'.
-6. Start TCP Server on Port 80: 'AT+CIPSERVER=1,80\r\n'.
-7. Verify server start confirmation.
+1. Initialize USART1 and USART2 at 115200 baud.
+2. Confirm modem connectivity: 'AT
+'.
+3. Enable multiple TCP connection mode: 'AT+CIPMUX=1
+'.
+4. Bind and start TCP Server on Port 80: 'AT+CIPSERVER=1,80
+'.
+5. Listen for incoming client connection notifications: '0,CONNECT'.
+6. Verify socket state using 'AT+CIPSTATUS
+'.
 ```
 
 ---
@@ -43,17 +47,11 @@
 
 ```c
 #include "main.h"
+#include <stdio.h>
 #include <string.h>
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
-
-void esp_exec(char *cmd, uint32_t timeout) {
-    char buf[256] = {0};
-    HAL_UART_Transmit(&huart2, (uint8_t*)cmd, strlen(cmd), timeout);
-    HAL_UART_Receive(&huart2, (uint8_t*)buf, sizeof(buf)-1, timeout);
-    HAL_UART_Transmit(&huart1, (uint8_t*)buf, strlen(buf), 500);
-}
 
 int main(void) {
     HAL_Init();
@@ -63,12 +61,16 @@ int main(void) {
     MX_USART2_UART_Init();
 
     HAL_Delay(2000);
-    esp_exec("AT\r\n", 500);
-    esp_exec("AT+CIPMUX=1\r\n", 500);
-    esp_exec("AT+CIPSERVER=1,80\r\n", 1000);
+    HAL_UART_Transmit(&huart2, (uint8_t*)"AT+CIPMUX=1
+", 13, 1000);
+    HAL_Delay(500);
+    HAL_UART_Transmit(&huart2, (uint8_t*)"AT+CIPSERVER=1,80
+", 19, 1000);
+    HAL_Delay(500);
 
     while (1) {
-        HAL_Delay(1000);
+        // Superloop listens for TCP incoming connection events
+        HAL_Delay(100);
     }
 }
 ```
@@ -77,4 +79,4 @@ int main(void) {
 
 ## Inference & Technical Analysis
 
-AT+CIPMUX=1 enables the ESP8266 socket multiplexer for up to 5 concurrent TCP client connections (channel IDs 0-4). Opening TCP server on port 80 allows any HTTP web browser or Node-RED node to initiate connections.
+Configuring `AT+CIPMUX=1` enables up to 4 concurrent client connections. Binding the server to Port 80 readies the modem for handling HTTP client traffic.

@@ -1,13 +1,13 @@
-# TASK14: BME280 Sensor Interfacing Using MQTT Cloud Publishing & Node-RED Analytics
+# TASK14: Modular Hardware Abstraction Driver (ESPLib) for Embedded Wi-Fi Modem Interfacing
 
 ## Experiment Metadata
 
 | Field | Description |
 |---|---|
 | **EXP** | CAT14 |
-| **DATE** | 04/11/2026 |
-| **NAME OF EXP** | BME280 Sensor Interfacing Using MQTT Cloud Publishing & Node-RED Analytics |
-| **HARDWARE SETUP / PLATFORM** | STM32 NUCLEO-F401RE, BME280 Sensor, ESP8266 Wi-Fi Modem, Public MQTT Broker (broker.emqx.io:1883), Node-RED Dashboard |
+| **DATE** | 29/10/2026 |
+| **NAME OF EXP** | BME280 Sensor Interfacing Using Custom Built ESP8266 API (ESPLib) |
+| **HARDWARE SETUP / PLATFORM** | STM32 NUCLEO-F401RE, BME280 Sensor, ESP8266 Wi-Fi Modem |
 | **TASK NO** | TASK14 |
 
 ---
@@ -20,24 +20,24 @@
 
 | Nucleo Pin | Target Device | Function |
 |---|---|---|
-| PB8, PB9 | BME280 Module | Sensor Acquisition |
-| PA2, PA3 | ESP8266 Modem | MQTT Cloud Uplink |
-| Network | broker.emqx.io:1883 | Public MQTT Broker |
+| PB8, PB9 | BME280 Module | I2C Sensor Acquisition |
+| PA9, PA10 | ESP8266 Modem | USART1 Modem Driver Interface |
+| 3.3V, GND | Power Bus | System Power Rail |
 
 ---
 
 ## Core Logic & Pseudocode
 
 ```text
-1. Initialize BME280 sensor and Wi-Fi modem driver.
-2. Connect ESP8266 to local Wi-Fi router.
-3. Open TCP connection to MQTT broker: 'AT+CIPSTART="TCP","broker.emqx.io",1883'.
-4. Send MQTT CONNECT control packet (Clean Session = 1, Keep Alive = 60s).
-5. In superloop (every 5 seconds):
-   a. Sample temperature, pressure, humidity from BME280.
-   b. Format MQTT PUBLISH packet to topic 'fiot/25011102104/bme280'.
-   c. Transmit packet via CIPSEND.
-   d. Node-RED MQTT in node receives telemetry and plots real-time charts.
+1. Initialize Nucleo-F401RE clock, I2C1, and USART1.
+2. Initialize BME280 sensor structure using Bosch API.
+3. Call ESP_Init(&huart1) to initialize modem driver state machine.
+4. Issue high-level API call: ESP_ConnectAP("SSID", "PASS").
+5. In superloop:
+   a. Read calibrated environmental metrics from BME280.
+   b. Construct telemetry string: "TEMP: 26.4 C, HUM: 58.2 %".
+   c. Issue high-level API call: ESP_SendTCP(payload).
+   d. Delay 2000 ms.
 ```
 
 ---
@@ -49,27 +49,27 @@
 #include "bme280.h"
 #include "ESPLib.h"
 #include <stdio.h>
-#include <string.h>
 
-UART_HandleTypeDef huart2;
+I2C_HandleTypeDef hi2c1;
+UART_HandleTypeDef huart1;
+struct bme280_data sensor_data;
 
 int main(void) {
-    char payload[128];
+    char tele_buf[128];
     HAL_Init();
     SystemClock_Config();
     MX_GPIO_Init();
     MX_I2C1_Init();
-    MX_USART2_UART_Init();
+    MX_USART1_UART_Init();
 
-    ESP8266_Init(StationMode, huart2);
-    ESP8266_wifiConnect("WiFi_SSID", "WiFi_PASS");
-    ESP8266_portConnect("TCP", "broker.emqx.io", 1883);
+    ESP_Init(&huart1);
+    ESP_JoinAP("iPhone", "rith1100");
 
     while (1) {
-        sprintf(payload, "{\"temp\": 26.2, \"press\": 1012.8, \"hum\": 54.0}");
-        // Publish to MQTT topic
-        ESP8266_sendData(payload);
-        HAL_Delay(5000);
+        bme280_get_sensor_data(BME280_ALL, &sensor_data, &dev);
+        sprintf(tele_buf, "T:%.2f H:%.2f P:%.2f", sensor_data.temperature, sensor_data.humidity, sensor_data.pressure);
+        ESP_SendPacket(tele_buf);
+        HAL_Delay(2000);
     }
 }
 ```
@@ -78,4 +78,4 @@ int main(void) {
 
 ## Inference & Technical Analysis
 
-MQTT publish-subscribe architecture decoupling clients through an intermediary broker dramatically reduces edge device energy consumption compared to polling-based HTTP. QoS 0 delivery provides real-time telemetry streaming to cloud analytics dashboards.
+Modular driver architecture (ESPLib) decouples low-level UART AT framing from top-level application logic, significantly improving testability and code maintainability.

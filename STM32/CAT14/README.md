@@ -1,13 +1,13 @@
-# CAT14: BME280 Sensor Interfacing Using MQTT Cloud Publishing & Node-RED Analytics
+# CAT14: BME280 Sensor Interfacing Using Custom Built ESP8266 API (ESPLib)
 
 ## 1. Experiment Overview
 
 | Field | Details |
 |---|---|
-| **Experiment Identifier** | CAT14 |
-| **Date of Execution** | 04/11/2026 |
-| **Hardware Platform** | STM32 + BME280 + ESP8266 + MQTT |
-| **Curriculum Scope** | Full-stack IoT edge telemetry node publishing real-time environmental data over MQTT to EMQX and Node-RED. |
+| **Experiment Identifier** | CAT14 (Curriculum Ref: CAT13) |
+| **Date of Execution** | 29/10/2026 |
+| **Hardware Platform** | STM32 NUCLEO-F401RE + BME280 + ESP8266 |
+| **Curriculum Scope** | Modular hardware abstraction driver architecture (ESPLib) for embedded Wi-Fi modem interfacing and non-blocking command execution. |
 
 ---
 
@@ -19,14 +19,13 @@
 
 ## 3. Subtask Directory Index
 
-| Task ID | Folder Link | Description & Objective |
-|---|---|---|
-| **TASK14** | [TASK14](TASK14/) | Full-Stack IoT Telemetry Node Publishing Sensor Telemetry over MQTT to EMQX & Node-RED |
+| Subtask | Title | Description | Primary Peripherals |
+|---|---|---|---|
+| [TASK14](TASK14/README.md) | ESPLib Modular Driver Architecture | Layered driver wrapping AT commands into high-level C function primitives. | USART1, I2C1, BME280, ESP8266 |
 
 ---
 
-## 4. Platform Specifications & Architecture
+## 4. Key Engineering Takeaways
 
-- **Microcontroller**: STM32 + BME280 + ESP8266 + MQTT
-- **Development Toolchain**: Keil C51 / Keil MDK-ARM with STM32CubeMX HAL Driver Layer.
-- **Verification**: Complete source code, Keil project configurations, compiled `.hex` binaries, and circuit schematics are organized within each subtask directory.
+1. **Abstraction Decoupling:** Isolating modem UART transactions behind function APIs (`ESP_Init`, `ESP_Send`) improves software portability.
+2. **State Verification:** Built-in error handling guards against wireless network disconnects.
